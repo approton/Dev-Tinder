@@ -1,66 +1,105 @@
 const express = require("express")
-
+// const {adminAuth, userAuth} = require("./middlewares/auth")
+const {connectDB} = require("./config/database")
+const {User} = require("./models/user")
 const app = express();
 const PORT = 3000;
 
 
-// app.use("/test", (req, res) => {
-//     res.send("Hello from Test Server!")
-// })
-// app.use("/hello", (req, res) => {
-//     res.send("Hello from Hello!")
-// })
-// app.use("/", (req, res) => {
-//     res.send("Hello from Server!")
-// })
+app.use(express.json());
 
-// app.get("/user", (req, res) =>{
-//     console.log(req.query)
-//     res.send({firstName: "Ram", lastName: "Pandey"});
-// });
+app.post("/signup", async (req, res) => {
 
-// app.post("/user", (req, res)=>{
-//     res.send("Data Saved to DB Successfully!");
-// });
+    const user= new User(req.body);
 
-// app.put("/user", (req, res) => {
-//     res.send("Data Updated Successfully")
-// });
-// app.patch("/user", (req, res)=>{
-//     res.send("Data Field updated Successfully")
-// });
+    try{
+        user.save();
+        res.send("User Added Successfully!")
+    }
+    catch(err){
+        res.status(400).send("error in saving data", err.message);
+    }
+    //console.log(req.body.firstName); //right now won't work because we are not parsing incoming request
+    // const user = new User({
+    //     firstName: "Amitabh",
+    //     lastName: "Bacchan",
+    //     emailId: "amit@bachchan.in",
+    //     password: "amit@123",
+    // });
+    // try{
+    // await user.save();
+    // res.send("User Added Successfully!");
+    // }
+    // catch(err){
+    //     res.status(400).send("Error in saving the data", err.message)
+    // }
+})
 
-// app.delete("/user", (req, res) => {
-//     res.send("Data Deleted from DB Successfully")
-// })
+app.get("/user", async (req, res) => {
+    const userEmail = req.body.emailId;
+    //const users = await User.findOne({emailId: userEmail}); Gives the first user which matches
+    const users = await User.find({emailId: userEmail});
+    console.log(users)
+    try{
+        if(users.length===0){
 
-// app.get("/user/:userId/:username/:password", (req, res)=>{
-//     console.log(req.params);
-//     res.send("Complex Regex Pattern")
-// })
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(users);
+        }
+    }
+    catch(err){
+        res.status(400).send("Something Went Wrong!")
+    }
+})
 
-app.use("/user",
-    (req, res, next)=>{
-        console.log("1st Route Handler");
-        next();
-    },
-    (req, res, next)=>{
-        console.log("2nd Route Handler");
-        next();
-    },
-    (req, res, next)=>{
-        console.log("3rd Route Handler");
-        next();
-    },
-    (req, res, next)=>{
-        console.log("4th Route Handler");
-        next();
-    },
-    (req, res, next)=>{
-        console.log("5th Route Handler");
-        res.send("5th Handler")
-    },
-)
-app.listen(PORT, () =>{
+app.get("/feed", async (req, res) => {
+    const users = await User.find({});
+    try{
+        if(users.length===0){
+            res.status(404).send("User not found")
+        }
+        else{
+            res.send(users);
+        }
+    }
+    catch(err){
+        res.status(400).send("Something Went Wrong!")
+    }
+
+})
+
+app.delete("/user", async (req, res) => {
+    const userId = req.body.userId;
+    try{
+        const user = await User.findByIdAndDelete(userId);
+        res.send("User Deleted Successfully!")
+    }
+    catch(err){
+        res.status.send("Something went wrong !")
+    }
+})
+//Update Data in Database
+
+app.patch("/user", async (req, res) => {
+    const userId = req.body.userId;
+    const data = req.body
+    try{
+        await User.findByIdAndUpdate({_id: userId}, data);
+        res.send("User Updated Successfully!");
+    }
+    catch(err){
+        res.status(400).send("Something went wrong !")
+    }
+})
+connectDB()
+.then(()=>{
+    console.log("Connected to Database Successfully");
+    app.listen(PORT, () =>{
     console.log("Server Started on PORT: ", PORT)
+})
+})
+.catch(()=>{
+    console.error("Database connection failed")
 })
